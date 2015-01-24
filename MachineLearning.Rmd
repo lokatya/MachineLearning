@@ -1,0 +1,130 @@
+---
+title: "Machine Learning Project"
+output: html_document
+---
+
+
+# Data Loading 
+
+1. Data were loaded using read.table function and blanks, spaces and NAs were 
+read as na.strings and transformed to tbl_df format .
+
+
+```{r,echo=FALSE}
+
+library(dplyr);library(lubridate);library(caret)
+library(randomForest);library(caret);
+
+```
+
+
+
+```{r,echo=TRUE}
+url_training<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+fileName_training<-"training.csv"
+#download.file(url_training,dest=fileName_training,method = "curl")
+data_training<-read.table(fileName_training,header = TRUE,sep = ",",na.strings=c(""," ","NA"))
+
+url_testing<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+fileName_testing<-"testing.csv"
+#download.file(url_testing,dest=fileName_testing,method = "curl")
+data_testing<-read.table(fileName_testing,header = TRUE,sep = ",",na.strings=c(""," ","NA"))
+
+tbl_training<-tbl_df(data_training);tbl_testing<-tbl_df(data_testing)
+
+```
+
+
+# Data Preproceing
+
+2. We noticed that many variables did not contain any measurements in both training and
+testing dataset. These variables (columns) were removed.
+3. We aslo removed first seven columns which have only discriptive information 
+in both sets.
+
+
+```{r}
+
+# Find columns in training set with all NAs
+
+na_training<-rep(0,times=160)
+for(i in 1:160){
+na_training[i]<-sum(is.na(tbl_training[,i]))
+}
+
+
+ind_training<-which(na_training==0)
+clean_training<-tbl_training[,ind_training]
+
+# Find columns in test set with all NAs
+
+na_testing<-rep(0,times=160)
+for(i in 1:160){
+na_testing[i]<-sum(is.na(tbl_testing[,i]))
+}
+
+
+ind_testing<-which(na_testing==0)
+clean_testing<-tbl_testing[,ind_testing]
+
+
+# Remove first seven columns in training and test sets
+trainPC<-clean_training[,c(-1,-2,-3,-4,-5,-6,-7)]
+testPC<-clean_testing[,c(-1,-2,-3,-4,-5,-6,-7)]
+
+```
+
+
+Next we splitted data loaded from training file into training (75%)  and
+testing set (25%) and used *randomForest()* to build the  model.
+Generated model *modelFit* was next used for the prediction for both training
+and testing sets and results were used for error estimation using *confusionmatrix()*.
+We found that then prediction was used on training test the accuracy was 1 and when
+prediction was used on testing test the accuracy was 0.9951.
+
+
+
+```{r, echo=TRUE}
+set.seed(123)
+inTrain <- createDataPartition(y=trainPC$classe,p=0.75, list=FALSE)
+training <- trainPC[inTrain,]
+testing<- trainPC[-inTrain,]
+modelFit<-randomForest(classe ~ ., data=training,importance=TRUE)
+
+prdctTrain <- predict(modelFit,training,predict.all=TRUE)
+prdctTest<- predict(modelFit,testing,predict.all=TRUE)
+
+cnf_test<-confusionMatrix(prdctTest$aggregate,testing$classe)
+cnf_train<-confusionMatrix(prdctTrain$aggregate,training$classe)
+cnf_test
+cnf_train
+
+```
+
+
+
+# Run test for Write Results
+Finally, we used built model for predition using data loaded from testing file.
+Submitted results gave all correct answers.   
+
+
+```{r, echo=TRUE}
+
+prdctTrueTest<- predict(modelFit,testPC,predict.all=TRUE)
+
+answers=as.character(prdctTrueTest$aggregate)
+
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(answers)
+
+
+```
+
