@@ -35,7 +35,7 @@ tbl_training<-tbl_df(data_training);tbl_testing<-tbl_df(data_testing)
 ```
 
 
-# Data Preproceing
+# Data Preprocessing
 
 2. We noticed that many variables did not contain any measurements in both training and
 testing dataset. These variables (columns) were removed.
@@ -103,7 +103,7 @@ cnf_train
 
 
 
-# Run test for Write Results
+# Analysis of testing dataset
 Finally, we used built model for predition using data loaded from testing file.
 Submitted results gave all correct answers.   
 
